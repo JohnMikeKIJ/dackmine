@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamond Finder Game</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #00BFFF, #1E90FF); /* Stylish Blue Gradient Background */
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            color: #fff;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 40px); /* Smaller boxes */
+            grid-gap: 8px;
+            margin: 20px auto;
+            justify-content: center;
+        }
+        .box {
+            width: 40px;
+            height: 40px;
+            background-color: #E0FFFF; /* Very Light Blue */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .box:hover {
+            background-color: #AFEEEE; /* Light Cyan on Hover */
+            transform: scale(1.05);
+        }
+        .box.revealed {
+            background-color: #F0F8FF; /* Alice Blue */
+            cursor: default;
+        }
+        .diamond {
+            color: gold;
+        }
+        .cancel {
+            color: red;
+        }
+        #predict-button, #refresh-button, #connect-button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 18px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        #predict-button, #refresh-button {
+            background-color: #004080; /* Dark Blue */
+        }
+        #predict-button:hover, #refresh-button:hover {
+            background-color: #003366; /* Even Darker Blue on Hover */
+            transform: scale(1.05);
+        }
+        #connect-button {
+            background-color: #003366; /* Dark Blue */
+        }
+        #connect-button:hover {
+            background-color: #002233; /* Dark Blue on */
+            transform: scale(1.05);
+        }
+        #connect-button.connected {
+            background-color: #2E8B57; /* Sea Green */
+        }
+        .checkbox-group {
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            margin: 5px 10px;
+            font-size: 16px;
+            color: #fff;
+        }
+        .checkbox-group input {
+            margin-right: 5px;
+            accent-color: #003366; /* Dark Blue for Checkboxes */
+        }
+        .input-group {
+            margin: 20px;
+        }
+        .input-group input {
+            width: 200px;
+            height: 40px;
+            font-size: 18px;
+            padding: 5px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .input-group input:invalid {
+            border-color: red;
+        }
+        .warning-message {
+            font-weight: bold;
+            font-size: 18px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="checkbox-group">
+        <label><input type="checkbox" name="options" value="1xbet"> 1xbet</label>
+        <label><input type="checkbox" name="options" value="melbet"> Melbet</label>
+        <label><input type="checkbox" name="options" value="paripluse"> Paripluse</label>
+        <label><input type="checkbox" name="options" value="sportybet"> Sportybet</label>
+        <label><input type="checkbox" name="options" value="paripesa"> Paripesa</label>
+        <label><input type="checkbox" name="options" value="1win"> 1win</label>
+        <label><input type="checkbox" name="options" value="mega pari"> Mega Pari</label>
+        <label><input type="checkbox" name="options" value="linebet"> Linebet</label>
+    </div>
+    
+    <div class="input-group">
+        <input type="tel" id="id-input" placeholder="Input Your Betting ID" pattern="\d{9}" required>
+    </div>
+    <button id="connect-button">Connect</button>
+    
+    <button id="predict-button">Predict</button>
+    <button id="refresh-button">Refresh</button>
+    <div id="game" class="grid"></div>
+
+    <script>
+        const gridSize = 5;
+        const minDiamonds = 3;
+        const maxDiamonds = 5;
+        const grid = document.getElementById('game');
+        const predictButton = document.getElementById('predict-button');
+        const refreshButton = document.getElementById('refresh-button');
+        const connectButton = document.getElementById('connect-button');
+        const idInput = document.getElementById('id-input');
+
+        function createGrid() {
+            grid.innerHTML = ''; // Clear existing grid
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const box = document.createElement('div');
+                box.className = 'box';
+                box.dataset.index = i;
+                box.addEventListener('click', revealBox);
+                grid.appendChild(box);
+            }
+        }
+
+        function placeDiamonds() {
+            const boxes = document.querySelectorAll('.box');
+            const indices = Array.from(Array(gridSize * gridSize).keys());
+            const diamondCount = Math.floor(Math.random() * (maxDiamonds - minDiamonds + 1)) + minDiamonds; // Random count between 3 and 5
+            for (let i = 0; i < diamondCount; i++) {
+                const randomIndex = Math.floor(Math.random() * indices.length);
+                const boxIndex = indices.splice(randomIndex, 1)[0];
+                boxes[boxIndex].dataset.hasDiamond = true;
+            }
+        }
+
+        function revealBox() {
+            if (this.classList.contains('revealed')) return;
+            this.classList.add('revealed');
+            if (this.dataset.hasDiamond) {
+                this.innerHTML = '💎';
+                this.classList.add('diamond');
+            } else {
+                this.innerHTML = '';
+            }
+        }
+
+        function revealAllDiamonds() {
+            const boxes = document.querySelectorAll('.box');
+            boxes.forEach(box => {
+                if (box.dataset.hasDiamond) {
+                    box.innerHTML = '💎';
+                    box.classList.add('diamond');
+                } else {
+                    box.innerHTML = '❌'; // Display cancel sign
+                    box.classList.add('cancel');
+                }
+                box.classList.add('revealed'); // Ensure all boxes are revealed
+            });
+        }
+
+        function refreshGame() {
+            createGrid();
+            placeDiamonds();
+        }
+
+        function validateSelection() {
+            const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
+            return Array.from(checkboxes).some(checkbox => checkbox.checked);
+        }
+
+        function validateIdInput() {
+            return idInput.checkValidity();
+        }
+
+        createGrid();
+        placeDiamonds();
+
+        predictButton.addEventListener('click', () => {
+            if (validateSelection()) {
+                revealAllDiamonds();
+            } else {
+                alert('Select your betting site.');
+            }
+        });
+
+        refreshButton.addEventListener('click', refreshGame);
+
+        connectButton.addEventListener('click', () => {
+            if (validateIdInput()) {
+                alert('Make sure this is a correct id and you have chosen the correct betting site. If not, you might suffer a lot of losses.');
+                connectButton.textContent = 'Connected'; // Change button text
+                connectButton.classList.add('connected'); // Apply connected styling
+                connectButton.disabled = true; // Disable the button
+            } else {
+                alert('Input your betting site ID.');
+            }
+        });
+    </script>
+</body>
+</html>
